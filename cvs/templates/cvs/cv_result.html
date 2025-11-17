@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Kết quả phân tích CV</title>
+</head>
+<body>
+    <h2>Kết quả phân tích CV</h2>
+    <p><strong>Tên file:</strong> {{ cv.file.name }}</p>
+    <h3>Nội dung trích xuất:</h3>
+    <pre style="white-space: pre-wrap;">{{ text }}</pre>
+    <a href="{% url 'upload_cv' %}">Phân tích CV khác</a>
+</body>
+</html>

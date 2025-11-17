@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Trang tuyển dụng thông minh</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 30px;
+            background: #f9fafb;
+        }
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 20px;
+        }
+        .box {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            overflow-y: auto;
+            max-height: 600px;
+        }
+        h2 {
+            margin-top: 0;
+            color: #333;
+        }
+        pre { font-family: monospace; font-size: 13px; }
+        a { color: #007bff; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+    </style>
+</head>
+{% if messages %}
+  {% for message in messages %}
+    <p style="padding: 10px; background: #fffae6; border-left: 4px solid #ffc107;">
+        {{ message }}
+    </p>
+  {% endfor %}
+{% endif %}
+<body>
+    <!-- <h1>🌟 Trang tuyển dụng thông minh</h1> -->
+    <h1>Trang tuyển dụng thông minh</h1>
+
+    <div class="container">
+        <!-- Vùng Upload CV -->
+        <div class="box">
+            <h2>📝 Nộp CV của bạn</h2>
+        
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                {{ form.as_p }}
+                <button type="submit">Phân tích CV</button>
+            </form>
+        
+            {% if analyzed_data %}
+            <hr>
+            <h3>📊 Kết quả phân tích CV</h3>
+            <p><strong>Họ tên:</strong> {{ analyzed_data.full_name|default:"(Không xác định)" }}</p>
+            <p><strong>Email:</strong> {{ analyzed_data.email|default:"(Không xác định)" }}</p>
+            <p><strong>Điện thoại:</strong> {{ analyzed_data.phone|default:"(Không xác định)" }}</p>
+            <p><strong>Kỹ năng:</strong> {{ analyzed_data.skills|default:"(Không xác định)" }}</p>
+            <p><strong>Học vấn:</strong></p>
+            <pre>{{ analyzed_data.education|default:"(Không xác định)" }}</pre>
+            <p><strong>Kinh nghiệm:</strong></p>
+            <pre>{{ analyzed_data.experience|default:"(Không xác định)" }}</pre>
+            {% endif %}
+
+            {% if score %}
+            <div class="box" style="margin-top: 20px;">
+                <h2>📊 Điểm đánh giá CV</h2>
+                <p><strong>Tổng điểm:</strong> {{ score.total }}/100</p>
+
+                <ul>
+                    <li>🧍‍♂️ Thông tin liên hệ: {{ score.breakdown.contact }}/20</li>
+                    <li>🧠 Kỹ năng: {{ score.breakdown.skills }}/25</li>
+                    <li>🎓 Học vấn: {{ score.breakdown.education }}/15</li>
+                    <li>💼 Kinh nghiệm: {{ score.breakdown.experience }}/25</li>
+                    <li>📄 Bố cục & độ dài: {{ score.breakdown.structure }}/15</li>
+                </ul>
+            </div>
+            {% endif %}
+
+            {% if match_results %}
+            <div class="box" style="margin-top: 20px;">
+                <h2>🎯 Gợi ý việc làm phù hợp</h2>
+                <ul>
+                    {% for item in match_results %}
+                    <li style="margin-bottom: 10px;">
+                        <strong>{{ item.job.title }}</strong><br>
+                        🏢 {{ item.job.company }}<br>
+                        🏷️ {{ item.job.labels }}<br>
+                        🔥 <b>{{ item.score }}%</b> phù hợp<br>
+                        <a href="{{ item.job.url }}" target="_blank">Xem chi tiết</a>
+
+                        <!-- ✅ Nút Nộp CV tự động -->
+                        {% if current_cv %}
+                            <form action="{% url 'apply_job' current_cv.id item.job.id %}" method="post" style="margin-top: 5px;">
+                                {% csrf_token %}
+                                <button type="submit" style="padding: 4px 8px; background-color: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                                    📧 Nộp CV
+                                </button>
+                            </form>
+                        {% else %}
+                            <small>⚠️ Vui lòng tải lên CV trước khi nộp.</small>
+                        {% endif %}                        
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Vùng Danh sách công việc -->
+        <div class="box">
+            <h2>💼 Danh sách công việc mới nhất</h2>
+            {% if jobs %}
+                <ul>
+                    {% for job in jobs %}
+                        <li style="margin-bottom: 10px;">
+                            <strong>{{ job.title }}</strong><br>
+                            <small>
+                                🏢 {{ job.company }} |
+                                🕒 {{ job.created_at }}
+                            </small><br>
+                            <small>🏷️ {{ job.labels }}</small><br>
+                            <a href="{{ job.url }}" target="_blank">Xem chi tiết</a>
+                        </li>
+                    {% endfor %}
+                </ul>
+
+                <!-- ✅ PHÂN TRANG -->
+                <div class="pagination" style="margin-top: 15px; text-align: center;">
+                    {% if jobs.has_previous %}
+                        <a href="?page={{ jobs.previous_page_number }}">« Trước</a>
+                    {% endif %}
+
+                    <span style="margin: 0 10px;">
+                        Trang {{ jobs.number }} / {{ jobs.paginator.num_pages }}
+                    </span>
+
+                    {% if jobs.has_next %}
+                        <a href="?page={{ jobs.next_page_number }}">Sau »</a>
+                    {% endif %}
+                </div>
+            {% else %}
+                <p>Không thể tải danh sách việc làm.</p>
+            {% endif %}
+        </div>
+
+        <!-- Vùng Ứng viên tiềm năng -->
+        <div class="box">
+            <h2>👨‍💼 Ứng viên tiềm năng</h2>
+            {% if cvs %}
+            <ul>
+            {% for cv in cvs %}
+                <li style="margin-bottom: 10px;">
+                    <strong>
+                        <a href="{{ cv.file.url }}" target="_blank">    
+                        {{ cv.full_name|default:"(Ẩn danh)" }}
+                        </a>
+                    </strong><br>
+                    📧 {{ cv.email|default:"N/A" }}<br>
+                    🧠 Kỹ năng: {{ cv.skills|truncatewords:10 }}<br>
+                    💯 Điểm CV: <b>{{ cv.score|floatformat:1 }}</b> / 100<br>
+                    🎯 Mức phù hợp trung bình: <b>{{ cv.match_score|floatformat:1 }}%</b><br>
+                    🌟 <b>Điểm tiềm năng: {{ cv.potential_score|floatformat:1 }}</b> / 100
+
+                    <a href="{{ cv.file.url }}" download style="font-size: 13px;">⬇️ Tải CV</a>
+                </li>
+            {% endfor %}
+            </ul>
+        {% else %}
+            <p>Chưa có ứng viên nào.</p>
+        {% endif %}
+        </div>
+    </div>
+</body>
+</html>

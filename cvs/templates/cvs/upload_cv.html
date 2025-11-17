@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Upload CV</title>
+</head>
+<body>
+    <h2>Upload CV (PDF)</h2>
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">Phân tích CV</button>
+    </form>
+</body>
+</html>
