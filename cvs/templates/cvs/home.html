@@ -2,177 +2,257 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>Trang tuyển dụng thông minh</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- Quan trọng cho Mobile -->
+    <title>Smart Recruit</title>
     <style>
+        /* --- 1. CẤU TRÚC CHUNG --- */
         body {
-            font-family: Arial, sans-serif;
-            margin: 30px;
-            background: #f9fafb;
-        }
-        .container {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            gap: 20px;
-        }
-        .box {
-            background: white;
-            border-radius: 10px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
             padding: 20px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            overflow-y: auto;
-            max-height: 600px;
-        }
-        h2 {
-            margin-top: 0;
+            background: #f0f2f5;
             color: #333;
         }
-        pre { font-family: monospace; font-size: 13px; }
-        a { color: #007bff; text-decoration: none; }
-        a:hover { text-decoration: underline; }
+        h1 { text-align: center; color: #2c3e50; margin-bottom: 30px; }
+        h2 { font-size: 1.2rem; color: #444; border-bottom: 2px solid #eee; padding-bottom: 10px; margin-top: 0; }
+        a { color: #007bff; text-decoration: none; transition: 0.2s; }
+        a:hover { text-decoration: underline; color: #0056b3; }
+        
+        /* --- 2. LAYOUT GRID --- */
+        .container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); /* Tự động co giãn cột */
+            gap: 25px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* --- 3. CÁC BOX (CARD) --- */
+        .box {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            max-height: 80vh; /* Chiều cao tối đa theo màn hình */
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* --- 4. UTILITIES (NÚT, BADGE, LIST) --- */
+        ul { list-style: none; padding: 0; margin: 0; }
+        li { border-bottom: 1px solid #f1f1f1; padding: 12px 0; }
+        li:last-child { border-bottom: none; }
+
+        /* Nút bấm đẹp hơn */
+        button, .btn {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background 0.3s;
+            width: 100%; /* Nút full chiều ngang */
+        }
+        button:hover { background-color: #0056b3; }
+        
+        .btn-green { background-color: #28a745; width: auto; font-size: 12px; padding: 6px 12px; margin-top: 8px; }
+        .btn-green:hover { background-color: #218838; }
+
+        /* Badge cho kỹ năng */
+        .badge {
+            display: inline-block;
+            background: #e9ecef;
+            color: #495057;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            margin-right: 4px;
+            margin-bottom: 4px;
+        }
+
+        /* Hiển thị thông báo (Message) */
+        .alert {
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 6px;
+            background: #fff3cd;
+            border-left: 5px solid #ffc107;
+            color: #856404;
+        }
+        
+        /* Highlight điểm số */
+        .score-high { color: #28a745; font-weight: bold; }
+        .score-med { color: #ffc107; font-weight: bold; }
+        .score-low { color: #dc3545; font-weight: bold; }
+
+        pre { 
+            background: #f8f9fa; 
+            padding: 10px; 
+            border-radius: 5px; 
+            white-space: pre-wrap; /* Tự xuống dòng nếu quá dài */
+        }
+        
+        /* Loading Spinner */
+        .loading-overlay {
+            display: none; /* Ẩn mặc định */
+            position: fixed; top:0; left:0; width:100%; height:100%;
+            background: rgba(255,255,255,0.8);
+            z-index: 999;
+            text-align: center;
+            padding-top: 20%;
+        }
     </style>
 </head>
-{% if messages %}
-  {% for message in messages %}
-    <p style="padding: 10px; background: #fffae6; border-left: 4px solid #ffc107;">
-        {{ message }}
-    </p>
-  {% endfor %}
-{% endif %}
 <body>
-    <!-- <h1>🌟 Trang tuyển dụng thông minh</h1> -->
-    <h1>Trang tuyển dụng thông minh</h1>
+
+    <!-- Hiệu ứng loading khi submit form -->
+    <div id="loading" class="loading-overlay">
+        <div style="font-size: 20px; font-weight: bold; color: #007bff;">🤖 AI đang phân tích CV... vui lòng chờ</div>
+    </div>
+
+    <h1>🌟 Trang tuyển dụng thông minh</h1>
+
+    {% if messages %}
+        <div style="max-width: 1400px; margin: 0 auto;">
+        {% for message in messages %}
+            <div class="alert">{{ message }}</div>
+        {% endfor %}
+        </div>
+    {% endif %}
 
     <div class="container">
-        <!-- Vùng Upload CV -->
+        <!-- CỘT 1: NỘP VÀ PHÂN TÍCH -->
         <div class="box">
             <h2>📝 Nộp CV của bạn</h2>
-        
-            <form method="post" enctype="multipart/form-data">
+            <!-- Thêm onsubmit để hiện loading -->
+            <form method="post" enctype="multipart/form-data" onsubmit="document.getElementById('loading').style.display='block'">
                 {% csrf_token %}
                 {{ form.as_p }}
-                <button type="submit">Phân tích CV</button>
+                <button type="submit">🚀 Phân tích ngay</button>
             </form>
-        
-            {% if analyzed_data %}
-            <hr>
-            <h3>📊 Kết quả phân tích CV</h3>
-            <p><strong>Họ tên:</strong> {{ analyzed_data.full_name|default:"(Không xác định)" }}</p>
-            <p><strong>Email:</strong> {{ analyzed_data.email|default:"(Không xác định)" }}</p>
-            <p><strong>Điện thoại:</strong> {{ analyzed_data.phone|default:"(Không xác định)" }}</p>
-            <p><strong>Kỹ năng:</strong> {{ analyzed_data.skills|default:"(Không xác định)" }}</p>
-            <p><strong>Học vấn:</strong></p>
-            <pre>{{ analyzed_data.education|default:"(Không xác định)" }}</pre>
-            <p><strong>Kinh nghiệm:</strong></p>
-            <pre>{{ analyzed_data.experience|default:"(Không xác định)" }}</pre>
-            {% endif %}
 
             {% if score %}
-            <div class="box" style="margin-top: 20px;">
-                <h2>📊 Điểm đánh giá CV</h2>
-                <p><strong>Tổng điểm:</strong> {{ score.total }}/100</p>
-
-                <ul>
-                    <li>🧍‍♂️ Thông tin liên hệ: {{ score.breakdown.contact }}/20</li>
-                    <li>🧠 Kỹ năng: {{ score.breakdown.skills }}/25</li>
-                    <li>🎓 Học vấn: {{ score.breakdown.education }}/15</li>
-                    <li>💼 Kinh nghiệm: {{ score.breakdown.experience }}/25</li>
-                    <li>📄 Bố cục & độ dài: {{ score.breakdown.structure }}/15</li>
+            <div style="background: #f8fff9; padding: 15px; border-radius: 8px; margin-top: 20px; border: 1px solid #c3e6cb;">
+                <h3 style="margin-top:0; color: #155724;">📊 Điểm đánh giá: {{ score.total }}/100</h3>
+                <small>Chi tiết thành phần:</small>
+                <ul style="font-size: 0.9em; margin-top: 5px;">
+                    <li>• Liên hệ: <b>{{ score.breakdown.contact }}</b>/20</li>
+                    <li>• Kỹ năng: <b>{{ score.breakdown.skills }}</b>/25</li>
+                    <li>• Học vấn: <b>{{ score.breakdown.education }}</b>/15</li>
+                    <li>• Kinh nghiệm: <b>{{ score.breakdown.experience }}</b>/25</li>
+                    <li>• Bố cục: <b>{{ score.breakdown.structure }}</b>/15</li>
                 </ul>
             </div>
             {% endif %}
 
             {% if match_results %}
-            <div class="box" style="margin-top: 20px;">
-                <h2>🎯 Gợi ý việc làm phù hợp</h2>
-                <ul>
-                    {% for item in match_results %}
-                    <li style="margin-bottom: 10px;">
-                        <strong>{{ item.job.title }}</strong><br>
-                        🏢 {{ item.job.company }}<br>
-                        🏷️ {{ item.job.labels }}<br>
-                        🔥 <b>{{ item.score }}%</b> phù hợp<br>
-                        <a href="{{ item.job.url }}" target="_blank">Xem chi tiết</a>
-
-                        <!-- ✅ Nút Nộp CV tự động -->
+            <h3 style="margin-top: 20px;">🎯 Việc làm phù hợp nhất</h3>
+            <ul>
+                {% for item in match_results %}
+                <li>
+                    <strong>{{ item.job.title }}</strong>
+                    <div style="font-size: 13px; color: #666;">🏢 {{ item.job.company }}</div>
+                    <div style="margin: 5px 0;">
+                        <span class="badge">🔥 {{ item.score }}% phù hợp</span>
+                    </div>
+                    
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <a href="{{ item.job.url }}" target="_blank" rel="noopener noreferrer">Xem job</a>
                         {% if current_cv %}
-                            <form action="{% url 'apply_job' current_cv.id item.job.id %}" method="post" style="margin-top: 5px;">
+                            <form action="{% url 'apply_job' current_cv.id item.job.id %}" method="post" style="margin:0;">
                                 {% csrf_token %}
-                                <button type="submit" style="padding: 4px 8px; background-color: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer;">
-                                    📧 Nộp CV
-                                </button>
+                                <button type="submit" class="btn-green">📧 Ứng tuyển ngay</button>
                             </form>
-                        {% else %}
-                            <small>⚠️ Vui lòng tải lên CV trước khi nộp.</small>
-                        {% endif %}                        
-                    </li>
-                    {% endfor %}
-                </ul>
-            </div>
+                        {% endif %} 
+                    </div>
+                </li>
+                {% endfor %}
+            </ul>
             {% endif %}
         </div>
 
-        <!-- Vùng Danh sách công việc -->
+        <!-- CỘT 2: DANH SÁCH VIỆC LÀM -->
         <div class="box">
-            <h2>💼 Danh sách công việc mới nhất</h2>
+            <h2>💼 Việc làm mới nhất</h2>
             {% if jobs %}
                 <ul>
                     {% for job in jobs %}
-                        <li style="margin-bottom: 10px;">
-                            <strong>{{ job.title }}</strong><br>
-                            <small>
-                                🏢 {{ job.company }} |
-                                🕒 {{ job.created_at }}
-                            </small><br>
-                            <small>🏷️ {{ job.labels }}</small><br>
-                            <a href="{{ job.url }}" target="_blank">Xem chi tiết</a>
+                        <li>
+                            <div style="display: flex; justify-content: space-between;">
+                                <strong>{{ job.title }}</strong>
+                                <small style="color: #888;">{{ job.created_at|date:"d/m" }}</small>
+                            </div>
+                            <small>🏢 {{ job.company }}</small>
+                            <div style="margin-top: 5px;">
+                                <!-- Giả sử job.labels là chuỗi ngăn cách bởi dấu phẩy -->
+                                <small class="badge">{{ job.labels }}</small>
+                            </div>
+                            <a href="{{ job.url }}" target="_blank" rel="noopener noreferrer" style="font-size: 13px; display: block; margin-top: 5px;">👉 Xem chi tiết</a>
                         </li>
                     {% endfor %}
                 </ul>
 
-                <!-- ✅ PHÂN TRANG -->
-                <div class="pagination" style="margin-top: 15px; text-align: center;">
+                <!-- Pagination -->
+                <div class="pagination" style="margin-top: auto; padding-top: 15px; text-align: center; border-top: 1px solid #eee;">
                     {% if jobs.has_previous %}
                         <a href="?page={{ jobs.previous_page_number }}">« Trước</a>
                     {% endif %}
-
-                    <span style="margin: 0 10px;">
-                        Trang {{ jobs.number }} / {{ jobs.paginator.num_pages }}
+                    <span style="margin: 0 10px; font-weight: bold; color: #555;">
+                        {{ jobs.number }} / {{ jobs.paginator.num_pages }}
                     </span>
-
                     {% if jobs.has_next %}
                         <a href="?page={{ jobs.next_page_number }}">Sau »</a>
                     {% endif %}
                 </div>
             {% else %}
-                <p>Không thể tải danh sách việc làm.</p>
+                <p style="text-align: center; color: #999;">Hiện chưa có tin tuyển dụng nào.</p>
             {% endif %}
         </div>
 
-        <!-- Vùng Ứng viên tiềm năng -->
+        <!-- CỘT 3: ỨNG VIÊN TIỀM NĂNG -->
         <div class="box">
-            <h2>👨‍💼 Ứng viên tiềm năng</h2>
+            <h2>👨‍💼 Top Ứng viên (Admin View)</h2>
             {% if cvs %}
             <ul>
             {% for cv in cvs %}
-                <li style="margin-bottom: 10px;">
-                    <strong>
-                        <a href="{{ cv.file.url }}" target="_blank">    
-                        {{ cv.full_name|default:"(Ẩn danh)" }}
-                        </a>
-                    </strong><br>
-                    📧 {{ cv.email|default:"N/A" }}<br>
-                    🧠 Kỹ năng: {{ cv.skills|truncatewords:10 }}<br>
-                    💯 Điểm CV: <b>{{ cv.score|floatformat:1 }}</b> / 100<br>
-                    🎯 Mức phù hợp trung bình: <b>{{ cv.match_score|floatformat:1 }}%</b><br>
-                    🌟 <b>Điểm tiềm năng: {{ cv.potential_score|floatformat:1 }}</b> / 100
+                <li>
+                    <div style="display: flex; justify-content: space-between; align-items: start;">
+                        <strong>
+                            <a href="{{ cv.file.url }}" target="_blank" rel="noopener noreferrer">{{ cv.full_name|default:"(Ẩn danh)" }}</a>
+                        </strong>
+                        <!-- Logic màu sắc cho điểm số -->
+                        {% if cv.score >= 80 %}
+                            <span class="score-high">{{ cv.score|floatformat:0 }}đ</span>
+                        {% elif cv.score >= 50 %}
+                            <span class="score-med">{{ cv.score|floatformat:0 }}đ</span>
+                        {% else %}
+                            <span class="score-low">{{ cv.score|floatformat:0 }}đ</span>
+                        {% endif %}
+                    </div>
+                    
+                    <div style="font-size: 13px; color: #555; margin: 4px 0;">
+                        📧 {{ cv.email|default:"N/A" }}
+                    </div>
+                    
+                    <!-- Kỹ năng dạng badge -->
+                    <div style="margin: 5px 0;">
+                        <span class="badge">Tiềm năng: {{ cv.potential_score|floatformat:1 }}</span>
+                    </div>
 
-                    <a href="{{ cv.file.url }}" download style="font-size: 13px;">⬇️ Tải CV</a>
+                    <div style="font-size: 12px; color: #666;">
+                        Mức phù hợp TB: <b>{{ cv.match_score|floatformat:1 }}%</b>
+                    </div>
+                    
+                    <a href="{{ cv.file.url }}" download style="font-size: 12px; display: inline-block; margin-top: 5px;">⬇️ Tải CV gốc</a>
                 </li>
             {% endfor %}
             </ul>
-        {% else %}
-            <p>Chưa có ứng viên nào.</p>
-        {% endif %}
+            {% else %}
+                <p style="text-align: center; color: #999;">Chưa có dữ liệu ứng viên.</p>
+            {% endif %}
         </div>
     </div>
 </body>
