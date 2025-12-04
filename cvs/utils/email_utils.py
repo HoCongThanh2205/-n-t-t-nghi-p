@@ -16,18 +16,28 @@ def extract_contact_info(text):
     return email, phone
 
 
-def send_cv_email(to_email, cv_path, applicant_name, applicant_email):
+def send_cv_email(to_email, cv_path, applicant_name, applicant_email, job_title="Công việc", skills=None):
     """Gửi email nộp CV cho nhà tuyển dụng"""
     subject = f"[Ứng viên mới] {applicant_name} - Nộp CV từ Smart Recruit"
-    body = f"""
-    Xin chào,
 
-    Tôi là {applicant_name}.
-    Tôi gửi kèm CV của mình để ứng tuyển công việc trên nền tảng Smart Recruit.
-    Email liên hệ: {applicant_email or '(chưa cung cấp)'}.
+    skills_text = ""
+    if skills:
+        skills_text = f"- Kỹ năng nổi bật: {skills}"
+
+    body = f"""
+    Kính gửi Bộ phận Tuyển dụng,
+
+    Hệ thống Smart Recruit xin trân trọng chuyển tiếp hồ sơ ứng tuyển của ứng viên:
+
+    - Họ tên: {applicant_name}.
+    - Ứng tuyển theo nhu cầu công việc: {job_title}.
+    - Email liên hệ: {applicant_email or '(chưa cung cấp)'}.
+    {skills_text}
+
+    Hồ sơ chi tiết (CV) đã được đính kèm trong email này.
 
     Trân trọng,
-    Smart Recruit
+    Đội ngũ Smart Recruit
     """
 
     email = EmailMessage(
