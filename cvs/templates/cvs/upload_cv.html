@@ -1,14 +1,75 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Upload CV</title>
-</head>
-<body>
-    <h2>Upload CV (PDF)</h2>
-    <form method="post" enctype="multipart/form-data">
-        {% csrf_token %}
-        {{ form.as_p }}
-        <button type="submit">Phân tích CV</button>
-    </form>
-</body>
-</html>
+{% extends 'cvs/base.html' %}
+
+{% block content %}
+<div style="max-width: 800px; margin: 0 auto;">
+    <div class="box">
+        <h2>📝 Nộp CV của bạn</h2>
+        <p style="color: #666; margin-bottom: 20px;">Tải lên CV của bạn để hệ thống AI phân tích và gợi ý việc làm phù
+            hợp nhất.</p>
+
+        <form method="post" enctype="multipart/form-data" onsubmit="showLoading()">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <button type="submit" class="btn btn-block" style="margin-top: 20px;">🚀 Phân tích ngay</button>
+        </form>
+
+        {% if analyzed_data %}
+        <hr>
+        <h3>📊 Kết quả phân tích CV</h3>
+        <p><strong>Họ tên:</strong> {{ analyzed_data.full_name|default:"(Không xác định)" }}</p>
+        <p><strong>Email:</strong> {{ analyzed_data.email|default:"(Không xác định)" }}</p>
+        <p><strong>Điện thoại:</strong> {{ analyzed_data.phone|default:"(Không xác định)" }}</p>
+        <p><strong>Kỹ năng:</strong> {{ analyzed_data.skills|default:"(Không xác định)" }}</p>
+        <p><strong>Học vấn:</strong></p>
+        <pre>{{ analyzed_data.education|default:"(Không xác định)" }}</pre>
+        <p><strong>Kinh nghiệm:</strong></p>
+        <pre>{{ analyzed_data.experience|default:"(Không xác định)" }}</pre>
+        {% endif %}
+
+        {% if score %}
+        <div
+            style="background: #f8fff9; padding: 20px; border-radius: 8px; margin-top: 30px; border: 1px solid #c3e6cb;">
+            <h3 style="margin-top:0; color: #155724; text-align: center;">📊 Điểm đánh giá: {{ score.total }}/100</h3>
+            <hr style="border: 0; border-top: 1px solid #c3e6cb; margin: 15px 0;">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px;">
+                <div>• Liên hệ: <b>{{ score.breakdown.contact }}</b>/20</div>
+                <div>• Kỹ năng: <b>{{ score.breakdown.skills }}</b>/25</div>
+                <div>• Học vấn: <b>{{ score.breakdown.education }}</b>/15</div>
+                <div>• Kinh nghiệm: <b>{{ score.breakdown.experience }}</b>/25</div>
+                <div>• Bố cục: <b>{{ score.breakdown.structure }}</b>/15</div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    {% if match_results %}
+    <div class="box">
+        <h2>🎯 Việc làm phù hợp nhất</h2>
+        <ul>
+            {% for item in match_results %}
+            <li>
+                <div style="display: flex; justify-content: space-between; align-items: start;">
+                    <div>
+                        <strong style="font-size: 1.1rem;">{{ item.job.title }}</strong>
+                        <div style="font-size: 14px; color: #666; margin-top: 4px;">🏢 {{ item.job.company }}</div>
+                    </div>
+                    <span class="badge" style="background: #ffeeba; color: #856404; font-size: 14px;">🔥 {{ item.score}}% phù hợp</span>
+                </div>
+
+                <div style="margin-top: 15px; display: flex; gap: 10px;">
+                    <a href="{{ item.job.url }}" target="_blank" rel="noopener noreferrer" class="btn"
+                        style="background: #6c757d; font-size: 14px; padding: 6px 12px;">Xem chi tiết</a>
+                    {% if current_cv %}
+                    <form action="{% url 'apply_job' current_cv.id item.job.id %}" method="post" style="margin:0;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-green">📧 Ứng tuyển ngay</button>
+                    </form>
+                    {% endif %}
+                </div>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
