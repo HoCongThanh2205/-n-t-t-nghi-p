@@ -1,0 +1,53 @@
+{% extends 'cvs/base.html' %}
+
+{% block content %}
+<div class="box">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h2 style="border: none; margin: 0;">💼 Danh sách việc làm mới nhất</h2>
+        <span style="color: #666;">Tổng số: {{ jobs.paginator.count }} tin</span>
+    </div>
+
+    {% if jobs %}
+    <ul>
+        {% for job in jobs %}
+        <li>
+            <div style="display: flex; justify-content: space-between;">
+                <strong style="font-size: 1.1rem;">{{ job.title }}</strong>
+                <small style="color: #888;">{{ job.created_at|date:"d/m/Y" }}</small>
+            </div>
+            <div style="font-size: 14px; color: #555; margin: 5px 0;">🏢 {{ job.company }}</div>
+
+            <div style="margin-top: 8px;">
+                <!-- Giả sử job.labels là chuỗi ngăn cách bởi dấu phẩy -->
+                {% if job.labels %}
+                <small class="badge">{{ job.labels }}</small>
+                {% endif %}
+            </div>
+
+            <div style="margin-top: 10px;">
+                <a href="{{ job.url }}" target="_blank" rel="noopener noreferrer" style="font-weight: 600;">👉 Xem chi
+                    tiết</a>
+            </div>
+        </li>
+        {% endfor %}
+    </ul>
+
+    <!-- Pagination -->
+    <div class="pagination">
+        {% if jobs.has_previous %}
+        <a href="?page={{ jobs.previous_page_number }}">« Trước</a>
+        {% endif %}
+
+        <span class="current-page">
+            Trang {{ jobs.number }} / {{ jobs.paginator.num_pages }}
+        </span>
+
+        {% if jobs.has_next %}
+        <a href="?page={{ jobs.next_page_number }}">Sau »</a>
+        {% endif %}
+    </div>
+    {% else %}
+    <p style="text-align: center; color: #999; padding: 40px;">Hiện chưa có tin tuyển dụng nào.</p>
+    {% endif %}
+</div>
+{% endblock %}
