@@ -44,6 +44,8 @@ def apply_job(request, cv_id, job_id):
                 cv_path=cv.file.path,
                 applicant_name=cv.full_name or "Ứng viên ẩn danh",
                 applicant_email=cv.email,
+                job_title=job.title,
+                skills=cv.skills
             )
             messages.success(request, f"✅ Đã gửi CV đến {email} thành công!")
         except Exception as e:
@@ -60,27 +62,19 @@ def apply_job(request, cv_id, job_id):
     return redirect("home")
 
 def home(request):
-    # --- 1️⃣ Nếu chưa có job, tự fetch ---
-    if Job.objects.count() == 0:
-        fetch_and_save_jobs()
-
-    # --- 2️⃣ Phân trang danh sách job ---
-    job_list = Job.objects.all().order_by('-created_at')
-    paginator = Paginator(job_list, 10)  # mỗi trang 10 jobs
-    page_number = request.GET.get('page')
-    jobs = paginator.get_page(page_number)
-
-    # --- 3️⃣ Biến mặc định ---
+    # --- 1️⃣ Biến mặc định ---
     form = CVForm()
     analyzed_data = None
     cv_score = None
     match_results = []
+    current_cv = None
 
-    # --- 4️⃣ Upload và phân tích CV ---
+    # --- 2️⃣ Upload và phân tích CV ---
     if request.method == "POST":
         form = CVForm(request.POST, request.FILES)
         if form.is_valid():
             cv = form.save()
+            current_cv = cv
 
             # 🔍 Phân tích CV bằng AI
             data = analyze_cv(cv.file.path)
@@ -97,8 +91,10 @@ def home(request):
             cv_score = cv_score_data  # để hiển thị ra template
 
             # 🎯 Tính độ phù hợp với từng job
+            # Lấy tất cả job để match
+            all_jobs = Job.objects.all()
             matches = []
-            for job in job_list:
+            for job in all_jobs:
                 match_score = match_cv_to_job(analyzed_data, job)
                 if match_score > 0:
                     matches.append({"job": job, "score": match_score})
@@ -122,16 +118,35 @@ def home(request):
         else:
             messages.error(request, "❌ Vui lòng chọn file hợp lệ trước khi nộp.")
 
-    # --- 5️⃣ Lấy top ứng viên tiềm năng ---
-    cvs = CV.objects.all().order_by('-potential_score', '-created_at')[:5]
-
-    # --- 6️⃣ Render ra giao diện ---
-    return render(request, "cvs/home.html", {
+    # --- 3️⃣ Render ra giao diện ---
+    return render(request, "cvs/upload_cv.html", {
         "form": form,
         "analyzed_data": analyzed_data,
         "score": cv_score,
         "match_results": match_results,
-        "jobs": jobs,
-        "cvs": cvs,
-        "current_cv": cv if request.method == "POST" and form.is_valid() else None,
+        "current_cv": current_cv,
+    })
+
+def job_list(request):
+    # --- 1️⃣ Nếu chưa có job, tự fetch ---
+    if Job.objects.count() == 0:
+        fetch_and_save_jobs()
+
+    # --- 2️⃣ Phân trang danh sách job ---
+    job_queryset = Job.objects.all().order_by('-created_at')
+    paginator = Paginator(job_queryset, 10)  # mỗi trang 10 jobs
+    page_number = request.GET.get('page')
+    jobs = paginator.get_page(page_number)
+
+    return render(request, "cvs/job_list.html", {
+        "jobs": jobs
+    })
+
+def candidate_list(request):
+    # --- 1️⃣ Lấy top ứng viên tiềm năng ---
+    # Lấy nhiều hơn 5 nếu là trang danh sách riêng, ví dụ 20
+    cvs = CV.objects.all().order_by('-potential_score', '-created_at')[:20]
+
+    return render(request, "cvs/candidate_list.html", {
+        "cvs": cvs
     })
