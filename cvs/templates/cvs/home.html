@@ -134,6 +134,20 @@
                 <button type="submit">🚀 Phân tích ngay</button>
             </form>
 
+            {% if analyzed_data %}
+                <hr>
+                <h3>📊 Kết quả phân tích CV</h3>
+                <p><strong>Họ tên:</strong> {{ analyzed_data.full_name|default:"(Không xác định)" }}</p>
+                <p><strong>Email:</strong> {{ analyzed_data.email|default:"(Không xác định)" }}</p>
+                <p><strong>Điện thoại:</strong> {{ analyzed_data.phone|default:"(Không xác định)" }}</p>
+                <p><strong>Kỹ năng:</strong> {{ analyzed_data.skills|default:"(Không xác định)" }}</p>
+                <p><strong>Học vấn:</strong></p>
+                <pre>{{ analyzed_data.education|default:"(Không xác định)" }}</pre>
+                <p><strong>Kinh nghiệm:</strong></p>
+                <pre>{{ analyzed_data.experience|default:"(Không xác định)" }}</pre>
+            {% endif %}
+
+            
             {% if score %}
             <div style="background: #f8fff9; padding: 15px; border-radius: 8px; margin-top: 20px; border: 1px solid #c3e6cb;">
                 <h3 style="margin-top:0; color: #155724;">📊 Điểm đánh giá: {{ score.total }}/100</h3>
