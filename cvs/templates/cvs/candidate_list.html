@@ -1,0 +1,56 @@
+{% extends 'cvs/base.html' %}
+
+{% block content %}
+<div class="box">
+    <h2 style="margin-bottom: 20px;">👨‍💼 Top Ứng viên (Admin View)</h2>
+
+    {% if cvs %}
+    <div style="overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="background: #f8f9fa; text-align: left;">
+                    <th style="padding: 12px; border-bottom: 2px solid #dee2e6;">Ứng viên</th>
+                    <th style="padding: 12px; border-bottom: 2px solid #dee2e6;">Điểm CV</th>
+                    <th style="padding: 12px; border-bottom: 2px solid #dee2e6;">Tiềm năng</th>
+                    <th style="padding: 12px; border-bottom: 2px solid #dee2e6;">Phù hợp TB</th>
+                    <th style="padding: 12px; border-bottom: 2px solid #dee2e6;">Thao tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for cv in cvs %}
+                <tr style="border-bottom: 1px solid #eee;">
+                    <td style="padding: 12px;">
+                        <div style="font-weight: bold;">
+                            <a href="{{ cv.file.url }}" target="_blank" rel="noopener noreferrer">{{cv.full_name|default:"(Ẩn danh)" }}</a>
+                        </div>
+                        <div style="font-size: 13px; color: #666;">📧 {{ cv.email|default:"N/A" }}</div>
+                    </td>
+                    <td style="padding: 12px;">
+                        {% if cv.score >= 80 %}
+                        <span class="score-high">{{ cv.score|floatformat:0 }}đ</span>
+                        {% elif cv.score >= 50 %}
+                        <span class="score-med">{{ cv.score|floatformat:0 }}đ</span>
+                        {% else %}
+                        <span class="score-low">{{ cv.score|floatformat:0 }}đ</span>
+                        {% endif %}
+                    </td>
+                    <td style="padding: 12px;">
+                        <span class="badge" style="background: #e2e6ea;">{{ cv.potential_score|floatformat:1 }}</span>
+                    </td>
+                    <td style="padding: 12px;">
+                        <b>{{ cv.match_score|floatformat:1 }}%</b>
+                    </td>
+                    <td style="padding: 12px;">
+                        <a href="{{ cv.file.url }}" download class="btn"
+                            style="padding: 4px 8px; font-size: 12px; background: #17a2b8;">⬇️ Tải về</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <p style="text-align: center; color: #999; padding: 40px;">Chưa có dữ liệu ứng viên.</p>
+    {% endif %}
+</div>
+{% endblock %}
