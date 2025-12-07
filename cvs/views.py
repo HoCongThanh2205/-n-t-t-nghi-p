@@ -3,7 +3,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.core.paginator import Paginator
 from .forms import CVForm
-from .models import CV, Job
+from .models import CV, Job, CVJobMatch
 from .ai import analyze_cv
 from .github_jobs import fetch_and_save_jobs
 from .scoring import score_cv, match_cv_to_job
@@ -94,9 +94,19 @@ def home(request):
             # Lấy tất cả job để match
             all_jobs = Job.objects.all()
             matches = []
+            
+            # Xóa các match cũ của CV này (nếu muốn làm mới hoàn toàn)
+            CVJobMatch.objects.filter(cv=cv).delete()
+
             for job in all_jobs:
                 match_score = match_cv_to_job(analyzed_data, job)
                 if match_score > 0:
+                    # Lưu vào DB
+                    CVJobMatch.objects.create(
+                        cv=cv,
+                        job=job,
+                        match_score=match_score
+                    )
                     matches.append({"job": job, "score": match_score})
 
             # 🔽 Sắp xếp theo độ phù hợp giảm dần
