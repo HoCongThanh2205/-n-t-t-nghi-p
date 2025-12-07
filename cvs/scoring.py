@@ -1,4 +1,6 @@
 import re
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
 
 def score_cv(cv_data):
     """
@@ -65,6 +67,32 @@ def score_cv(cv_data):
         "breakdown": details
     }
 
+def calculate_tfidf_similarity(text1, text2):
+    """
+    Tính độ tương đồng Cosine giữa 2 văn bản dùng TF-IDF.
+    Trả về giá trị từ 0.0 đến 1.0
+    """
+    if not text1 or not text2:
+        return 0.0
+    
+    try:
+        # Tạo corpus gồm 2 văn bản
+        corpus = [text1, text2]
+        
+        # Khởi tạo vectorizer
+        vectorizer = TfidfVectorizer(stop_words='english')
+        
+        # Fit và transform
+        tfidf_matrix = vectorizer.fit_transform(corpus)
+        
+        # Tính cosine similarity
+        similarity = cosine_similarity(tfidf_matrix[0:1], tfidf_matrix[1:2])
+        
+        return similarity[0][0]
+    except Exception as e:
+        print(f"Lỗi tính TF-IDF: {e}")
+        return 0.0
+
 def match_cv_to_job(cv_data, job):
     # --- 1️⃣ Chuẩn hóa dữ liệu ---
     cv_skills = []
@@ -82,24 +110,49 @@ def match_cv_to_job(cv_data, job):
     elif isinstance(job.labels, list):
         job_labels = [s.strip().lower() for s in job.labels]
 
-    if not job_labels or not cv_skills:
-        return 0  # Không có dữ liệu để so sánh
+    # --- 2️⃣ Đếm kỹ năng trùng (Skill Match) ---
+    skill_match_score = 0
+    if job_labels and cv_skills:
+        matched = [s for s in cv_skills if s in job_labels]
+        match_ratio = len(matched) / len(job_labels)
+        skill_match_score = min(match_ratio * 100, 100)
 
-    # --- 2️⃣ Đếm kỹ năng trùng ---
-    matched = [s for s in cv_skills if s in job_labels]
-    match_ratio = len(matched) / len(job_labels)
+    # --- 3️⃣ Tính độ tương đồng ngữ nghĩa (Semantic Match) ---
+    # Lấy full text từ CV (nếu có) hoặc ghép các trường lại
+    cv_full_text = cv_data.get("extracted_text", "")
+    if not cv_full_text:
+        # Fallback: ghép các trường quan trọng
+        parts = [
+            cv_data.get("skills", ""),
+            cv_data.get("experience", ""),
+            cv_data.get("education", "")
+        ]
+        cv_full_text = " ".join([str(p) for p in parts if p])
 
-    # --- 3️⃣ Điểm kỹ năng ---
-    skill_score = round(match_ratio * 80, 2)  # chiếm 80% tổng điểm
+    # Lấy full text từ Job
+    job_full_text = f"{job.title} {job.description or ''} {job.labels or ''}"
 
-    # --- 4️⃣ Bonus điểm nếu có từ khóa trong kinh nghiệm ---
+    semantic_score = calculate_tfidf_similarity(cv_full_text, job_full_text) * 100
+
+    # --- 4️⃣ Tổng hợp điểm ---
+    # Trọng số: 50% Skill Match + 50% Semantic Match
+    # Nếu không có skill match (VD: job không có label), dùng 100% semantic
+    
+    if not job_labels:
+        final_score = semantic_score
+    else:
+        final_score = (skill_match_score * 0.5) + (semantic_score * 0.5)
+
+    # Bonus điểm nếu có từ khóa trong kinh nghiệm (giữ lại logic cũ nhưng giảm trọng số)
     exp_text = (cv_data.get("experience") or "").lower()
     bonus = 0
-    for lbl in matched:
-        if lbl in exp_text:
-            bonus += 3  # mỗi kỹ năng có trong kinh nghiệm cộng thêm 3 điểm
+    if job_labels:
+        matched = [s for s in cv_skills if s in job_labels]
+        for lbl in matched:
+            if lbl in exp_text:
+                bonus += 2 
 
-    bonus = min(bonus, 20)  # giới hạn 20 điểm bonus
-    total_score = min(skill_score + bonus, 100)
+    bonus = min(bonus, 10)
+    total_score = min(final_score + bonus, 100)
 
     return round(total_score, 2)
