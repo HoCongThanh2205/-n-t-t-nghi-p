@@ -131,6 +131,7 @@ def analyze_cv(file_path):
         "skills": ", ".join(data.get("skills", [])) if isinstance(data.get("skills"), list) else data.get("skills", ""),
         "education": "; ".join(data.get("education", [])) if isinstance(data.get("education"), list) else data.get("education", ""),
         "experience": "; ".join(data.get("experience", [])) if isinstance(data.get("experience"), list) else data.get("experience", ""),
+        "extracted_text": cv_text
     }
 
 def safe_json_parse(result_text):
