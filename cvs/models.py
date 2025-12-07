@@ -32,3 +32,13 @@ class Job(models.Model):
     def __str__(self):
         return self.title
 
+class CVJobMatch(models.Model):
+    cv = models.ForeignKey(CV, on_delete=models.CASCADE, related_name='matches')
+    job = models.ForeignKey(Job, on_delete=models.CASCADE, related_name='matches')
+    match_score = models.FloatField()
+    matched_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        unique_together = ('cv', 'job')
+    def __str__(self):
+        return f"{self.cv.full_name} - {self.job.title} ({self.match_score}%)"
